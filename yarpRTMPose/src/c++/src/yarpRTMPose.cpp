@@ -167,13 +167,10 @@ bool yarpRTMPose::configure(yarp::os::ResourceFinder &rf)
 bool yarpRTMPose::updateModule()
 {
     // mutex.wait();
-    std::cout << "Hello there!" << std::endl;
     auto *frame = inPort.read();
-    std::cout << "Hello there2!" << std::endl;
 
     if (frame)
     {
-        std::cout << "Nope" << std::endl;
         cv::Mat img = yarp::cv::toCvMat(*frame);
         auto [bboxes, keypoints] = inferencer->inference(img);
 
@@ -202,7 +199,6 @@ bool yarpRTMPose::interruptModule()
 
 bool yarpRTMPose::close()
 {
-    std::cout << "Closing" << std::endl;
     this->inPort.close();
     this->outPort.close();
     this->targetPort.close();

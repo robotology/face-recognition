@@ -35,7 +35,7 @@ ENV PATH=/venv/bin:$PATH
 RUN apt update && apt install -y libopencv-dev python3-opencv python3-dev
 
 # Install pytorch, necessary for mmpose
-RUN pip3 install torch torchvision torchaudio
+RUN pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2
 
 # Install mmpose dependencies
 RUN pip install -U openmim \
@@ -44,7 +44,7 @@ RUN pip install -U openmim \
     && mim install "mmdet>=3.0.0"
 
 # Install mmpose
-RUN git clone https://github.com/open-mmlab/mmpose.git --depth=1 \
+RUN git clone https://github.com/open-mmlab/mmpose.git -bv1.1.0 --depth=1 \
     && cd mmpose \
     && pip install -r requirements.txt \
     && pip install -v -e .
@@ -52,11 +52,11 @@ RUN git clone https://github.com/open-mmlab/mmpose.git --depth=1 \
 # Install mmdeploy and onnx runtime
 RUN pip install mmdeploy==1.0.0 \
     && pip install mmdeploy-runtime-gpu==1.0.0 \
-    && pip install onnxruntime-gpu==1.8.1 \
-    && wget https://github.com/microsoft/onnxruntime/releases/download/v1.8.1/onnxruntime-linux-x64-gpu-1.8.1.tgz \
-    && tar -zxvf onnxruntime-linux-x64-gpu-1.8.1.tgz 
+    && pip install onnxruntime-gpu==1.15.1\
+    && wget https://github.com/microsoft/onnxruntime/releases/download/v1.15.1/onnxruntime-linux-x64-gpu-1.15.1.tgz \
+    && tar -zxvf onnxruntime-linux-x64-gpu-1.15.1.tgz 
 
-ENV ONNXRUNTIME_DIR=/onnxruntime-linux-x64-gpu-1.8.1
+ENV ONNXRUNTIME_DIR=/onnxruntime-linux-x64-gpu-1.15.1
 
 # TODO: this requires more investigation as to why we need two different path to libcuda in different part of docker build
 ENV LD_LIBRARY_PATH=${ONNXRUNTIME_DIR}/lib:/usr/lib/x86_64-linux-gnu/:/usr/local/cuda-11.7/compat/:$LD_LIBRARY_PATH
@@ -140,14 +140,11 @@ RUN cd /robotology && git clone https://github.com/robotology/icub-contrib-commo
 ENV PYTHONPATH="/robotology/yarp/build/lib/python3:/yarpRTMPose/src/python"
 # ENV CMAKE_PREFIX_PATH="/mmdeploy/build/install/lib/cmake/MMDeploy"
 
-# Install c++ unit test framework
-RUN git clone https://github.com/catchorg/Catch2.git \
-    && cd Catch2 \
-    && cmake -Bbuild -H. -DBUILD_TESTING=OFF \
-    && cmake --build build/ --target install
-
 RUN apt install -y vim
 # Install the application
+ENV MMDEPLOY_DIR=/mmdeploy
+ENV MMPOSE_DIR=/mmpose
+
 COPY . /yarpRTMPose
 
 RUN cd /yarpRTMPose && cmake -B build -S . \
