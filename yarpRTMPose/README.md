@@ -19,6 +19,15 @@ cd human-sensing/yarpRTMPose
 ./docker/build_docker <my_img_name> #Equivalent of docker build -t <my_img_name> . 
 ```
 
+### Setup
+
+If you don't rely on the provided docker images, you have to set two environment variables 
+```
+MMDEPLOY_DIR=<path/to/mmdeploy/dir>
+MMPOSE_DIR=<path/to/mmpose/dir>
+```
+ 
+
 ## Usage
 
 From terminal

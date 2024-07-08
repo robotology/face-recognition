@@ -5,6 +5,7 @@
 #include "mmdeploy/detector.hpp"
 #include "utils/visualize.h"
 #include <fstream>
+#include <cstdlib>
 
 RTMPose::RTMPose(std::string det_model_path,
                  std::string pose_model_path,
@@ -71,9 +72,30 @@ cv::Mat RTMPose::paint(const cv::Mat &img,
 
 bool yarpRTMPose::configure(yarp::os::ResourceFinder &rf)
 {
+    if(rf.check("help"))
+    {
+        yInfo() << "RTMPose module. This module uses the RTMPOSE model to detect and estimate human poses in images.";
+        yInfo() << "Setup: ";
+        yInfo() << "Set the environment variable MMDEPLOY_DIR to the path where the models are stored.";
+        yInfo() << "Usage: ";
+        yInfo() << "--period: module period";
+        yInfo() << "--det_model_path: path to the detection model. Default: MMDEPLOY_DIR/rtmpose-ort/rtmdet-nano";
+        yInfo() << "--pose_model_path: path to the pose model. Default: MMDEPLOY_DIR/rtmpose-ort/rtmpose-l";
+        yInfo() << "--dataset: dataset used for inference. Default: coco_wholebody.";
+        yInfo() << "--device: device used for inference. Default: cuda";
+        yInfo() << "--module_name: name of the module. Default: yarpRTMPose";
+        yInfo() << "--openpose_format: if true, the output will be in openpose format";
+        return false;
+    }
+
+    const char* mmdeploy_path_env = std::getenv("MMDEPLOY_DIR");
+    std::string mmdeploy_path = mmdeploy_path_env ? std::string(mmdeploy_path_env) : "/mmdeploy";
+    std::string det_model_default_path = mmdeploy_path + "/rtmpose-ort/rtmdet-nano";
+    std::string pose_model_default_path = mmdeploy_path + "/rtmpose-ort/rtmpose-l";
+
     this->period = rf.check("period", yarp::os::Value(0.01)).asFloat32();
-    this->det_model_path = rf.check("det_model_path", yarp::os::Value("/mmdeploy/rtmpose-ort/rtmdet-nano")).asString();
-    this->pose_model_path = rf.check("pose_model_path", yarp::os::Value("/mmdeploy/rtmpose-ort/rtmpose-l")).asString();
+    this->det_model_path = rf.check("det_model_path", yarp::os::Value(det_model_default_path)).asString();
+    this->pose_model_path = rf.check("pose_model_path", yarp::os::Value(pose_model_default_path)).asString();
     this->dataset = rf.check("dataset", yarp::os::Value("coco_wholebody")).asString();
     this->device = rf.check("device", yarp::os::Value("cuda")).asString();
     this->module_name = rf.check("module_name", yarp::os::Value("yarpRTMPose")).asString();
@@ -147,23 +169,24 @@ bool yarpRTMPose::updateModule()
     // mutex.wait();
     auto *frame = inPort.read();
 
-    cv::Mat img = yarp::cv::toCvMat(*frame);
+    if (frame)
+    {
+        cv::Mat img = yarp::cv::toCvMat(*frame);
+        auto [bboxes, keypoints] = inferencer->inference(img);
 
-    auto [bboxes, keypoints] = inferencer->inference(img);
+        // Convert keypoints to bottle format
+        yarp::os::Bottle &target = targetPort.prepare();
+        target.clear();
+        target.addList().read(this->kpToBottle(keypoints));
+        targetPort.write();
 
-    // Convert keypoints to bottle format
-    yarp::os::Bottle &target = targetPort.prepare();
-    target.clear();
-    target.addList().read(this->kpToBottle(keypoints));
-    targetPort.write();
+        cv::Mat keypoints_img = inferencer->paint(img, bboxes, keypoints);
 
-    cv::Mat keypoints_img = inferencer->paint(img, bboxes, keypoints);
-
-    auto &outImage = outPort.prepare();
-    outImage = yarp::cv::fromCvMat<yarp::sig::PixelRgb>(keypoints_img);
-    // outImage = yarp::cv::fromCvMat<yarp::sig::PixelRgb>(img);
-    outPort.write();
-
+        auto &outImage = outPort.prepare();
+        outImage = yarp::cv::fromCvMat<yarp::sig::PixelRgb>(keypoints_img);
+        // outImage = yarp::cv::fromCvMat<yarp::sig::PixelRgb>(img);
+        outPort.write();
+    }
     // mutex.post();
 
     return true;

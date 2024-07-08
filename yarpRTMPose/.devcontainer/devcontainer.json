@@ -1,5 +1,5 @@
 {
-    "image": "fbrand/llm4hri:devl_mmdeploy",
+    "image": "fbrand-new/mutual-gaze:devel",
     "customizations": {
         "vscode": {
             "extensions": [

@@ -8,6 +8,17 @@
 
 TEST_CASE("Keypoints from image","[yarpRTMPose]")
 {
+    const char* mmdeploy_path_env = std::getenv("MMDEPLOY_DIR");
+
+    if(!mmdeploy_path_env)
+    {
+        yError() << "Please set MMDEPLOY_DIR environment variable";
+        return;
+    }
+
+    std::string det_model_path = std::string(mmdeploy_path_env) + "/rtmpose-ort/rtmdet-nano";
+    std::string pose_model_path = std::string(mmdeploy_path_env) + "/rtmpose-ort/rtmpose-l";
+    
     const std::filesystem::path img_path{"../../tests/data/000000000785.jpg"};
 
     cv::Mat test_img{cv::imread(img_path)};
@@ -16,9 +27,6 @@ TEST_CASE("Keypoints from image","[yarpRTMPose]")
     {
         std::cout << "Could not read the image" << img_path << std::endl;
     }
-
-    const std::filesystem::path det_model_path{"../../download/deployed_models/rtmpose-ort/rtmdet-nano"};
-    const std::filesystem::path pose_model_path{"../../download/deployed_models/rtmpose-ort/rtmpose-l"};
 
     const std::string dataset = "coco_wholebody"; 
     const std::string device = "cuda";
@@ -36,7 +44,16 @@ TEST_CASE("Keypoints from image","[yarpRTMPose]")
 
 TEST_CASE("RTMPose pipeline","[yarpRTMPose]")
 {
-    //TODO
+    const char* mmdeploy_path_env = std::getenv("MMDEPLOY_DIR");
+
+    if(!mmdeploy_path_env)
+    {
+        yError() << "Please set MMDEPLOY_DIR environment variable";
+        return;
+    }
+
+    std::string det_model_path = std::string(mmdeploy_path_env) + "/rtmpose-ort/rtmdet-nano";
+    std::string pose_model_path = std::string(mmdeploy_path_env) + "/rtmpose-ort/rtmpose-l";
 
     // 1. Build keypoints vector
     const std::filesystem::path img_path{"../../tests/data/000000000785.jpg"};
@@ -46,9 +63,6 @@ TEST_CASE("RTMPose pipeline","[yarpRTMPose]")
     {
         std::cout << "Could not read the image" << img_path;
     }
-
-    const std::filesystem::path det_model_path{"../../download/deployed_models/rtmpose-ort/rtmdet-nano"};
-    const std::filesystem::path pose_model_path{"../../download/deployed_models/rtmpose-ort/rtmpose-l"};
 
     const std::string dataset = "coco_wholebody"; 
     const std::string device = "cuda";
